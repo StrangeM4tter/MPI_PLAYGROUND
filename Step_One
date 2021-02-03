@@ -46,7 +46,7 @@ def Dispersion_calc(filename):
         if rank in range [6:8]:
            print(zeff or ModIndex or xstar)
            try:
-              gamma_complex_temp1=Dispersion(zeff)                 #try: gamme_complex_temp1=Dispersion(zeff, or ModIndex, or xstar or .... can be shortened!
+              gamma_complex_temp1=Dispersion(zeff)                 #try: gamme_complex_temp1=Dispersion(zeff, or ModIndex, or xstar or .... can be shortened! Check branch file
            except Exception:
               pass 
            try:   
