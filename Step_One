@@ -12,12 +12,12 @@ filename='MTM_dispersion_n_scanp169509.04218_465'
 #MPI_INIT not sure if necessary 
 
 def Dispersion_calc(filename):
-    
-    gamma_complex_temp=0
+    #if rank == 0:
+    gamma_complex_temp=0                   
     gamma_complex=[]
     Scatter1=[]
-    data=pd.read_csv(filename+'.csv')  	#data is a dataframe. 
-
+    data=pd.read_csv(filename+'.csv')  	#data is a dataframe.                                   #CAUTION: Unless rank is specified, code will run on all processes. Amend.
+ 
     nu=data['nu']
     nx=len(nu)
     zeff=data['zeff'][0]
@@ -37,55 +37,21 @@ def Dispersion_calc(filename):
     ModIndex=1
     
     Scatter1.append(nu, eta, shat, beta, ky, mu, zeff, xstar, ModIndex)
-    recvbuf = np.empty(nx, dtype='i')          #recbuf may be unecessary
+    recvbuf = np.empty(nx, dtype='i')          #recbuf may be unecessary         #np.empty seems extremely cumbersome to work with, 
     comm.Scatter(Scatter1, recvbuf, root=0)     #if recvbuf unecessary, delete recvbuf and amend code
     print('Rank: ',rank, ', recvbuf received: ',recvbuf) #checking purposes
    
 
     for i in range(nx):
-        if rank in range [6:8]:
-           print(zeff or ModIndex or xstar)
-           try:
-              gamma_complex_temp1=Dispersion(zeff)                 #try: gamme_complex_temp1=Dispersion(zeff, or ModIndex, or xstar or .... can be shortened!
-           except Exception:
-              pass 
-           try:   
-              gamma_complex_temp2=Dispersion(ModIndex)
-           except Exception:
-              pass                                                  #this kind of looks ugly! Incorprate send recv comm into try pass blocks, append to list at the end.
-           try:   
-              gamma_complex_temp3=Dispersion(xstar)
-           except Exception:
-              pass 
-              
-        elif rank in range [0:5]:
-          print(nu[i] or eta[i] or shat[i] or beta[i] or ky[i] or mu[i])
-          try:
-              gamma_complex_temp4=Dispersion(nu[i])                #Scatter and Gather should handle the root issue I was thinking of
-          except Exception:                                                    
-              pass
-          try:
-              gamma_complex_temp5=Dispersion(eta[i])
-          except Exception:
-              pass
-          try:    
-              gamma_complex_temp6=Dispersion(shat[i])
-          except Exception:
-              pass
-          try:    
-              gamma_complex_temp7=Dispersion(beta[i])   
-          except Exception:
-              pass
-          try:
-              gamma_complex_temp8=Dispersion(ky[i])
-          except Exception:
-              pass
-          try:
-              gamme_complex_temp9=Dispersion(mu[i])
-          except Exception:
-              pass
+        print(nu or eta or shat or beta or ky or mu or zeff or ModIndex or xstar)
+        try:
+           gamma_complex_temp1=Dispersion(nu or eta or shat or beta or ky or mu or zeff or ModIndex or xstar)
+        except:
+           print("Dispersion failed)
+           
+           
   if rank == 0:
-    comm.Gather(gamme_complex_temp1, gamme_complex_temp2, gamme_complex_temp3, gamme_complex_temp4, gamme_complex_temp5, gamme_complex_temp6, gamme_complex_temp7, gamme_complex_temp8, gamme_complex_temp9, root=0)            
+    comm.Gather(gamme_complex_temp1, root=0)            
   if rank == 0:
     print('Rank: ', rank, 'received recbuf: ' recvbuf)
         #gamma_complex.append(1) ?????
