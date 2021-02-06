@@ -12,42 +12,41 @@ filename='MTM_dispersion_n_scanp169509.04218_465'
 #MPI_INIT not sure if necessary 
 
 def Dispersion_calc(filename):
-    #if rank == 0:
-    gamma_complex_temp=0                   
-    gamma_complex=[]
-    Scatter1=[]
-    data=pd.read_csv(filename+'.csv')  	#data is a dataframe.                                   #CAUTION: Unless rank is specified, code will run on all processes. Amend.
+    if rank == 0:
+        gamma_complex_temp=0                   
+        gamma_complex=[]
+        Scatter1=[]
+        data=pd.read_csv(filename+'.csv')  	#data is a dataframe.                                   #CAUTION: Unless rank is specified, code will run on all processes. Amend.
  
-    nu=data['nu']
-    nx=len(nu)
-    zeff=data['zeff'][0]
+        nu=data['nu']
+        nx=len(nu)
+        zeff=data['zeff'][0]
   
-    eta=data['eta']
+        eta=data['eta']
 
-    shat=data['shat']
+        shat=data['shat']
 
-    beta=data['beta']
+        beta=data['beta']
    
-    ky=data['ky']
+        ky=data['ky']
     
-    mu=data['mu']
+        mu=data['mu']
    
-    xstar=data['xstar'][0]
+        xstar=data['xstar'][0]
     
-    ModIndex=1
+        ModIndex=1
     
-    Scatter1.append(nu, eta, shat, beta, ky, mu, zeff, xstar, ModIndex)
-    recvbuf = np.empty(nx, dtype='i')          #recbuf may be unecessary         #np.empty seems extremely cumbersome to work with, 
-    comm.Scatter(Scatter1, recvbuf, root=0)     #if recvbuf unecessary, delete recvbuf and amend code
-    print('Rank: ',rank, ', recvbuf received: ',recvbuf) #checking purposes
+        Scatter1.append(nu, eta, shat, beta, ky, mu, zeff, xstar, ModIndex)
+        recvbuf = np.empty(nx, dtype='i')          #recbuf may be unecessary         #np.empty seems extremely cumbersome to work with, 
+        comm.Scatter(Scatter1, recvbuf, root=0)     #if recvbuf unecessary, delete recvbuf and amend code
+        print('Rank: ',rank, ', recvbuf received: ',recvbuf) #checking purposes
    
 
     for i in range(nx):
         print(nu or eta or shat or beta or ky or mu or zeff or ModIndex or xstar)
-        try:
-           gamma_complex_temp1=Dispersion(nu or eta or shat or beta or ky or mu or zeff or ModIndex or xstar)
-        except:
-           print("Dispersion failed)
+        gamma_complex_temp1=Dispersion(nu or eta or shat or beta or ky or mu or zeff or ModIndex or xstar)
+        
+          
            
            
   if rank == 0:
