@@ -37,7 +37,7 @@ def Dispersion_calc(filename):
         ModIndex=1
     
         Scatter1.append(nu, eta, shat, beta, ky, mu, zeff, xstar, ModIndex)
-        recvbuf = np.empty(nx, dtype='i')          #recbuf may be unecessary         #np.empty seems extremely cumbersome to work with, 
+        recvbuf = np.empty(nx*len(Scatter1), dtype='i')          #recbuf may be unecessary         #np.empty seems extremely cumbersome to work with, 
         comm.Scatter(Scatter1, recvbuf, root=0)     #if recvbuf unecessary, delete recvbuf and amend code
         print('Rank: ',rank, ', recvbuf received: ',recvbuf) #checking purposes
    
@@ -49,17 +49,17 @@ def Dispersion_calc(filename):
           
            
            
-  if rank == 0:
-    comm.Gather(gamme_complex_temp1, root=0)            
-  if rank == 0:
-    print('Rank: ', rank, 'received recbuf: ' recvbuf)
-        #gamma_complex.append(1) ?????
-        #********This is the part that needs to be paraelled ****************
-        gamma_complex_temp=Dispersion(nu[i],zeff,eta[i],shat[i],beta[i],ky[i],ModIndex,mu[i],xstar)
+    if rank == 0:
+      comm.Gather(gamme_complex_temp1, root=0)            
+    if rank == 0:
+      print('Rank: ', rank, 'received recbuf: ' recvbuf)
+          #gamma_complex.append(1) ?????
+          #********This is the part that needs to be paraelled ****************
+          gamma_complex_temp=Dispersion(nu[i],zeff,eta[i],shat[i],beta[i],ky[i],ModIndex,mu[i],xstar)
         
         
-        gamma_complex.append(gamma_complex_temp)
-        #********This is the part that needs to be paraelled *****************
+          gamma_complex.append(gamma_complex_temp)
+          #********This is the part that needs to be paraelled *****************
         
     
     gamma_complex=np.asarray(gamma_complex)
