@@ -16,7 +16,7 @@ def Dispersion_calc(filename):
         gamma_complex_temp=0                   
         gamma_complex=[]
         Scatter1=[]
-        data=pd.read_csv(filename+'.csv')  	#data is a dataframe.                                   #CAUTION: Unless rank is specified, code will run on all processes. Amend.
+        data=pd.read_csv(filename+'.csv')  	#data is a dataframe.                          #code will run on all procs unless specified, careful.       
  
         nu=data['nu']
         nx=len(nu)
@@ -37,9 +37,9 @@ def Dispersion_calc(filename):
         ModIndex=1
     
         Scatter1.append(nu, eta, shat, beta, ky, mu, zeff, xstar, ModIndex)
-        recvbuf = np.empty(nx*len(Scatter1), dtype='i')          #recbuf may be unecessary         #np.empty seems extremely cumbersome to work with, 
-        comm.Scatter(Scatter1, recvbuf, root=0)     #if recvbuf unecessary, delete recvbuf and amend code
-        print('Rank: ',rank, ', recvbuf received: ',recvbuf) #checking purposes
+        recvbuf = np.empty(nx*len(Scatter1), dtype='d')          #recvbuf must evenly split data. In this case nx*9/9 to = nx per processor 
+        comm.Scatter(Scatter1, recvbuf, root=0)                    #np.empty seems extremely cumbersome to work with, but necessary for proper allocation
+        #print('Rank: ',rank, ', recvbuf received: ',recvbuf) #checking purposes
    
 
     for i in range(nx):
@@ -48,16 +48,17 @@ def Dispersion_calc(filename):
         
           
            
-           
+    sendbuf = np.linspace(rank*nx+1,(rank+1)*nx,nx)              #questionable
+    #print('Rank: ',rank, ', sendbuf: ',sendbuf)          
     if rank == 0:
-      comm.Gather(gamme_complex_temp1, root=0)            
-      print('Rank: ', rank, 'received recbuf: ' recvbuf)
-          #gamma_complex.append(1) ?????
-          #********This is the part that needs to be paraelled ****************
-          #gamma_complex_temp=Dispersion(nu[i],zeff,eta[i],shat[i],beta[i],ky[i],ModIndex,mu[i],xstar)         #obsolete
+        comm.Gather(gamme_complex_temp1, len[Scatter1], root=0)           #probably incorrect     
+        print('Rank: ', rank, 'received recbuf: ' recvbuf)
+            #gamma_complex.append(1) ?????
+            #********This is the part that needs to be paraelled ****************
+            #gamma_complex_temp=Dispersion(nu[i],zeff,eta[i],shat[i],beta[i],ky[i],ModIndex,mu[i],xstar)         #obsolete
         
         
-          gamma_complex.append(gamma_complex_temp1)
+        gamma_complex.append(gamma_complex_temp1)
           #********This is the part that needs to be paraelled *****************
         
     
