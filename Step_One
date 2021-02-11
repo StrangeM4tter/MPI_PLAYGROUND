@@ -44,7 +44,7 @@ def Dispersion_calc(filename):
 
     for i in range(nx):
         print(nu or eta or shat or beta or ky or mu or zeff or ModIndex or xstar)
-        gamma_complex_temp1=Dispersion(nu or eta or shat or beta or ky or mu or zeff or ModIndex or xstar)
+        gamma_complex_temp1=Dispersion(nu or eta or shat or beta or ky or mu or zeff or ModIndex or xstar)     #WRONG. Disperion requries all parameters to work
         
           
            
