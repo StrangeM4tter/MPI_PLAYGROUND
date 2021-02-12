@@ -4,7 +4,7 @@ from mpi4py import MPI
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 from DispersionRelationDeterminantFullConductivityZeff import Dispersion
-#VERSION 1 run the following: ibrun -np 9 0MTMDispersion_MPI.py
+#VERSION 1 run the following: ibrun -np 64 0MTMDispersion_MPI.py
 #                              9=# of processes running in parallel.
 # this code can most likely be optimized to run on all arrays universally
 
@@ -12,53 +12,43 @@ filename='MTM_dispersion_n_scanp169509.04218_465'
 #MPI_INIT not sure if necessary 
 
 def Dispersion_calc(filename):
-    if rank == 0:
-        gamma_complex_temp=0                   
-        gamma_complex=[]
-        Scatter1=[]
-        data=pd.read_csv(filename+'.csv')  	#data is a dataframe.                          #code will run on all procs unless specified, careful.       
+    gamma_complex_temp=0                   
+    gamma_complex=[]
+    #Scatter1=[]
+    data=pd.read_csv(filename+'.csv')  	#data is a dataframe.                          #code will run on all procs unless specified, careful.       
  
-        nu=data['nu']
-        nx=len(nu)
-        zeff=data['zeff'][0]
+    nu=data['nu']
+    nx=len(nu)
+    zeff=data['zeff'][0]
   
-        eta=data['eta']
+    eta=data['eta']
 
-        shat=data['shat']
+    shat=data['shat']
 
-        beta=data['beta']
-   
-        ky=data['ky']
+    beta=data['beta']
+  
+    ky=data['ky']
     
-        mu=data['mu']
+    mu=data['mu']
    
-        xstar=data['xstar'][0]
+    xstar=data['xstar'][0]
     
-        ModIndex=1
+    ModIndex=1
     
-        Scatter1.append(nu, eta, shat, beta, ky, mu, zeff, xstar, ModIndex)
-        recvbuf = np.empty(nx*len(Scatter1), dtype='d')          #recvbuf must evenly split data. In this case nx*9/9 to = nx per processor 
-        comm.Scatter(Scatter1, recvbuf, root=0)                    #np.empty seems extremely cumbersome to work with, but necessary for proper allocation
-        #print('Rank: ',rank, ', recvbuf received: ',recvbuf) #checking purposes
-   
-
-    for i in range(nx):
-        print(nu or eta or shat or beta or ky or mu or zeff or ModIndex or xstar)
-        gamma_complex_temp1=Dispersion(nu or eta or shat or beta or ky or mu or zeff or ModIndex or xstar)     #WRONG. Disperion requries all parameters to work, dispersion runs along a row of data, not a column (one set of nu,mu,beta etc)
-        
-          
-           
-    sendbuf = np.linspace(rank*nx+1,(rank+1)*nx,nx)              #questionable
-    #print('Rank: ',rank, ', sendbuf: ',sendbuf)          
     if rank == 0:
-        comm.Gather(gamme_complex_temp1, len[Scatter1], root=0)           #probably incorrect     
-        print('Rank: ', rank, 'received recbuf: ' recvbuf)
+        for i in range(nx):
+            print(nu, eta, shat, beta, ky, mu, zeff, ModIndex, xstar)
+            
+    for i in range(nx):
+        if rank == i:     
+            gamma_complex_temp=Dispersion(nu[i], eta[i], shat[i], beta[i], ky[i], mu[i], zeff, ModIndex, xstar)  
+       
             #gamma_complex.append(1) ?????
             #********This is the part that needs to be paraelled ****************
             #gamma_complex_temp=Dispersion(nu[i],zeff,eta[i],shat[i],beta[i],ky[i],ModIndex,mu[i],xstar)         #obsolete
         
         
-        gamma_complex.append(gamma_complex_temp1)
+        gamma_complex.append(gamma_complex_temp)
           #********This is the part that needs to be paraelled *****************
         
     
