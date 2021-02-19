@@ -43,10 +43,8 @@ def Dispersion_calc(filename):
     for i in range(nx):
         if rank == i:     
             gamma_complex_temp=Dispersion(nu[i], eta[i], shat[i], beta[i], ky[i], mu[i], zeff, ModIndex, xstar)  
-       
-            #gamma_complex.append(1) ?????present from inital code, unsure of purpose
-              
-        gamma_complex.append(gamma_complex_temp)
+            #gamma_complex.append(1) ?????present from inital code, unsure of purpose 
+            gamma_complex.append(gamma_complex_temp)
           
         
     
