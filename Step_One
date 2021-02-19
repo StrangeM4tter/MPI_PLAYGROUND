@@ -12,6 +12,7 @@ filename='MTM_dispersion_n_scanp169509.04218_465'
 #MPI_INIT not sure if necessary 
 
 def Dispersion_calc(filename):
+    rank    #(test)
     gamma_complex_temp=0                   
     gamma_complex=[]
     #Scatter1=[]
@@ -33,7 +34,7 @@ def Dispersion_calc(filename):
    
     xstar=data['xstar'][0]
     
-    ModIndex=1
+    ModIndex= 1
     
     if rank == 0:
         for i in range(nx):
