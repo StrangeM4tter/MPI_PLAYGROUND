@@ -35,11 +35,6 @@ def Dispersion_calc(path,filename):
     if rank == 0:
         for i in range(nx):
             print(nu, eta, shat, beta, ky, mu, zeff, ModIndex, xstar)   #prior 3 lines for full data list, amend if necessary. Should default be "off"?
-
-    for i in range(nx):
-        if rank == i:     
-            gamma_complex_temp=Dispersion(nu[i], eta[i], shat[i], beta[i], ky[i], mu[i], zeff, ModIndex, xstar)  
-       
             #gamma_complex.append(1) ?????present from inital code, unsure of purpose
               
     for i in range(nx):
