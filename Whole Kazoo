@@ -7,12 +7,16 @@ Created on 01/28/2021
 
 import pandas as pd
 import numpy as np
+from mpi4py import MPI
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
 from DispersionRelationDeterminantFullConductivityZeff import Dispersion
 
 csvfile_name='Scan_list_template.csv'
 
 def Dispersion_calc(path,filename):
     
+    print("Testing ... hello from rank: ", rank)
     gamma_complex_temp=0
     gamma_complex=[]
     data=pd.read_csv(path+'/'+filename)  	#data is a dataframe. 
@@ -27,14 +31,21 @@ def Dispersion_calc(path,filename):
     mu=data['mu']
     xstar=data['xstar'][0]
     ModIndex=1
+    
+    if rank == 0:
+        for i in range(nx):
+            print(nu, eta, shat, beta, ky, mu, zeff, ModIndex, xstar)   #prior 3 lines for full data list, amend if necessary. Should default be "off"?
 
     for i in range(nx):
-        #print(nu[i],zeff,eta[i],shat[i],beta[i],ky[i],ModIndex,mu[i],xstar)
-        #gamma_complex.append(1)
-        #********This is the part that needs to be paraelled ****************
-        gamma_complex_temp=Dispersion(nu[i],zeff,eta[i],shat[i],beta[i],ky[i],ModIndex,mu[i],xstar) 
-        gamma_complex.append(gamma_complex_temp)
-        #********This is the part that needs to be paraelled *****************
+        if rank == i:     
+            gamma_complex_temp=Dispersion(nu[i], eta[i], shat[i], beta[i], ky[i], mu[i], zeff, ModIndex, xstar)  
+       
+            #gamma_complex.append(1) ?????present from inital code, unsure of purpose
+              
+    for i in range(nx):
+        if rank == i:     
+            gamma_complex_temp=Dispersion(nu[i], eta[i], shat[i], beta[i], ky[i], mu[i], zeff, ModIndex, xstar)  
+            gamma_complex.append(gamma_complex_temp)
         
     
     gamma_complex=np.asarray(gamma_complex)
