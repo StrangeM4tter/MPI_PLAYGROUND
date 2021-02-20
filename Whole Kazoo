@@ -3,6 +3,7 @@
 Created on 01/28/2021
 
 @author: maxcurie
+@editor: matthewtennery
 """
 
 import pandas as pd
@@ -48,10 +49,30 @@ def Dispersion_calc(path,filename):
     gamma=gamma_complex.imag
     omega=gamma_complex.real
 
-    data['gamma(kHz)']=gamma*data['omn(kHz)']
-    data['gamma(cs/a)']=data['gamma(kHz)']*data['kHz_to_cs_a']
-    data['omega_plasma(kHz)']=omega*data['omn(kHz)']
-    data['omega_lab(kHz)']=data['omega_plasma(kHz)']+data['omega_star_lab(kHz)']-data['omega_star_plasma(kHz)']
+    if rank == 0:
+        ICHI = data['gamma(kHz)']=gamma*data['omn(kHz)']     #setting to  a single processor. set as object, broadcast object.
+        comm.bcast(ICHI, root=0)
+    else:
+        ICHI = None
+        
+    if rank == 1:
+        NI = data['gamma(cs/a)']=data['gamma(kHz)']*data['kHz_to_cs_a']    
+        comm.bcast(NI, root=1)
+    else:
+        NI = None
+        
+    if rank == 2:
+        SAN = data['omega_plasma(kHz)']=omega*data['omn(kHz)']    
+        comm.bcast(SAN, root=2)
+    else:
+        SAN = None    
+    
+    if rank == 3:
+        YON = data['omega_lab(kHz)']=data['omega_plasma(kHz)']+data['omega_star_lab(kHz)']-data['omega_star_plasma(kHz)']  
+        comm.bcast(YON, root=3)
+    else:
+        YON = None    
+    
 
     data.to_csv(path+'/0_calc_'+filename,index=False)
 
