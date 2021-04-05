@@ -1,21 +1,47 @@
+import atexit
+from time import time, strftime, localtime
+from datetime import timedelta
+
+def secondsToStr(elapsed=None):
+    if elapsed is None:
+        return strftime("%Y-%m-%d %H:%M:%S", localtime())
+    else:
+        return str(timedelta(seconds=elapsed))
+
+def log(s, elapsed=None):
+    line = "="*40
+    print(line)
+    print(secondsToStr(), '-', s)
+    if elapsed:
+        print("Elapsed time:", elapsed)
+    print(line)
+    print()
+
+def endlog():
+    end = time()
+    elapsed = end-start
+    log("End Program", secondsToStr(elapsed))
+
+start = time()
+atexit.register(endlog)
+log("Start Program")
+
 import pandas as pd
 import numpy as np
 from mpi4py import MPI
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 from DispersionRelationDeterminantFullConductivityZeff import Dispersion
-#VERSION 1 run the following: ibrun -np 64 0MTMDispersion_MPI.py
-#                              9=# of processes running in parallel.
+#VERSION 1 run the following: srun -N 1 -n 32 -t 01:00:00 -p development -J GKIMP ibrun netCDF4 python3 ./<file>.py
 # this code can most likely be optimized to run on all arrays universally
 
 filename='MTM_dispersion_n_scanp169509.04218_465'
-#MPI_INIT not sure if necessary 
+
 
 def Dispersion_calc(filename):
-    rank    #(test)
+    rank    
     gamma_complex_temp=0                   
-    gamma_complex=[]
-    #Scatter1=[]
+    gamma_complex=[]  
     data=pd.read_csv(filename+'.csv')  	#data is a dataframe.                          #code will run on all procs unless specified, careful.       
  
     nu=data['nu']
@@ -34,20 +60,35 @@ def Dispersion_calc(filename):
    
     xstar=data['xstar'][0]
     
-    ModIndex= 1
-    
-    if rank == 0:
-        for i in range(nx):
-            print(nu, eta, shat, beta, ky, mu, zeff, ModIndex, xstar)
+    ModIndex=data['ModIndex'][0]
+     
+    ##if rank == 0:                               #more of a test than anything. Causes clutter, off by default.
+        ##for i in range(nx):          
+            ##print(nu, eta, shat, beta, ky, mu, zeff, ModIndex, xstar)
             
-    for i in range(nx):
-        if rank == i:     
-            gamma_complex_temp=Dispersion(nu[i], eta[i], shat[i], beta[i], ky[i], mu[i], zeff, ModIndex, xstar)  
-            #gamma_complex.append(1) ?????present from inital code, unsure of purpose 
-            gamma_complex.append(gamma_complex_temp)
+    if size >= nx:        
+        for i in range(nx):
+            if rank == i:     
+                gamma_complex_temp=Dispersion(nu[i], eta[i], shat[i], beta[i], ky[i], mu[i], zeff, ModIndex, xstar) 
+                gamma_complex.append(gamma_complex_temp)
+    else:
+        for i in range(size):
+            if (rank) == i:
+                m = nx%size             #remainder
+                n = nx//size            #number of times size can fit evenly into nx
+                for x in range(n):
+                    if x == 0:
+                        gamma_complex_temp2=Dispersion(nu[(size*x)+i], eta[(size*x)+i], shat[(size*x)+i], beta[(size*x)+i], ky[(size*x)+i], mu[(size*x)+i], zeff, ModIndex, xstar)
+                        gamma_complex.append(gamma_complex_temp2)
+                    else:
+                        gamma_complex_temp=Dispersion(nu[(size*x)+i], eta[(size*x)+i], shat[(size*x)+i], beta[(size*x)+i], ky[(size*x)+i], mu[(size*x)+i], zeff, ModIndex, xstar)
+                        gamma_complex.append(gamma_complex_temp)
+                for i in range(m):
+                    gamma_complex_temp1=Dispersion(nu[(size*n)+i], eta[(size*n)+i], shat[(size*n)+i], beta[(size*n)+i], ky[(size*n)+i], mu[(size*n)+i], zeff, ModIndex, xstar)
+                    gamma_complex.append(gamma_complex_temp1)
+                    
+                    #above else block for a nontrivial case where # of rows > # of processors to keep some degree of efficiency. Not optimal unless m==0.
           
-        
-    
     gamma_complex=np.asarray(gamma_complex)
     #factor=np.asarray(factor)
     gamma=gamma_complex.imag
