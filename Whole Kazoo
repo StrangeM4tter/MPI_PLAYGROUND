@@ -2,23 +2,56 @@
 """
 Created on 01/28/2021
 
-@author: maxcurie
-@editor: matthewtennery
+@authors: matttennery, maxcurie
 """
+import atexit
+from time import time, strftime, localtime
+from datetime import timedelta
+
+def secondsToStr(elapsed=None):
+    if elapsed is None:
+        return strftime("%Y-%m-%d %H:%M:%S", localtime())
+    else:
+        return str(timedelta(seconds=elapsed))
+
+def log(s, elapsed=None):
+    if rank == 0:
+        line = "="*40
+        print(line)
+        print(secondsToStr(), '-', s)
+        if elapsed:
+            print("Elapsed time:", elapsed)
+        print(line)
+        print()
+
+def endlog():
+    if rank == 0:
+        end = time()
+        elapsed = end-start
+        log("End Program", secondsToStr(elapsed))
+start = time()
+#if rank ==0:                      ]
+    #atexit.register(endlog)       |----optional timer
+#log("Start Program")              ] 
+
+##################Start of MPI#####################
 
 import pandas as pd
 import numpy as np
 from mpi4py import MPI
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
+size = comm.Get_size()
 from DispersionRelationDeterminantFullConductivityZeff import Dispersion
+br = comm.Barrier()
 
 csvfile_name='Scan_list_template.csv'
 
 def Dispersion_calc(path,filename):
     
-    print("Testing ... hello from rank: ", rank)
     gamma_complex_temp=0
+    gamma_complex_temp1=0
+    gamma_complex_temp2=0
     gamma_complex=[]
     data=pd.read_csv(path+'/'+filename)  	#data is a dataframe. 
 
@@ -31,17 +64,36 @@ def Dispersion_calc(path,filename):
     ky=data['ky']
     mu=data['mu']
     xstar=data['xstar'][0]
-    ModIndex=1
+    ModIndex=data['ModIndex'][0]
     
-    if rank == 0:
-        for i in range(nx):
-            print(nu, eta, shat, beta, ky, mu, zeff, ModIndex, xstar)   #prior 3 lines for full data list, amend if necessary. Should default be "off"?
+    #if rank == 0:
+        #for i in range(nx):
+            #print(nu, eta, shat, beta, ky, mu, zeff, ModIndex, xstar)                   #nu,Zeff,eta,shat,beta,ky,ModIndex,mu,xstar
             #gamma_complex.append(1) ?????present from inital code, unsure of purpose
               
-    for i in range(nx):
-        if rank == i:     
-            gamma_complex_temp=Dispersion(nu[i], eta[i], shat[i], beta[i], ky[i], mu[i], zeff, ModIndex, xstar)  
-            gamma_complex.append(gamma_complex_temp)
+    if size >= nx:        
+        for i in range(nx):
+            if rank == i:     
+                gamma_complex_temp=Dispersion(nu[i], zeff, eta[i], beta[i], ky[i], ModIndex,  mu[i],  xstar, shat[i]) 
+                gamma_complex.append(gamma_complex_temp)
+        br
+        
+    else:
+        for i in range(size):
+            if (rank) == i:
+                m = nx%size             #remainder
+                n = nx//size            #number of times size can fit evenly into nx
+                for x in range(n):
+                    if x == 0:
+                        gamma_complex_temp2=Dispersion(nu[(size*x)+i], zeff, eta[(size*x)+i], beta[(size*x)+i], ky[(size*x)+i], ModIndex,  mu[(size*x)+i], xstar, shat[(size*x)+i])
+                        gamma_complex.append(gamma_complex_temp2)
+                    else:
+                        gamma_complex_temp=Dispersion(nu[(size*x)+i], zeff, eta[(size*x)+i], beta[(size*x)+i], ky[(size*x)+i], ModIndex, mu[(size*x)+i],  xstar, shat[(size*x)+i])
+                        gamma_complex.append(gamma_complex_temp)
+                for i in range(m):
+                    gamma_complex_temp1=Dispersion(nu[(size*n)+i], zeff, eta[(size*n)+i], beta[(size*n)+i], ky[(size*n)+i], ModIndex,  mu[(size*n)+i],  xstar, shat[(size*n)+i])
+                    gamma_complex.append(gamma_complex_temp1)
+        br
         
     
     gamma_complex=np.asarray(gamma_complex)
@@ -49,34 +101,40 @@ def Dispersion_calc(path,filename):
     gamma=gamma_complex.imag
     omega=gamma_complex.real
 
-    if rank == 0:
-        ICHI = data['gamma(kHz)']=gamma*data['omn(kHz)']     #setting to  a single processor. set as object, broadcast object.
-        comm.bcast(ICHI, root=0)
-    else:
-        ICHI = None
+    if size >= 4:
+        if rank == 0:
+            ICHI = data['gamma(kHz)']=gamma*data['omn(kHz)']     #setting to  a single processor. set as object, broadcast object.
+            comm.bcast(ICHI, root=0)
+        else:
+            ICHI = None
         
-    if rank == 1:
-        NI = data['gamma(cs/a)']=data['gamma(kHz)']*data['kHz_to_cs_a']    
-        comm.bcast(NI, root=1)
-    else:
-        NI = None
+        if rank == 1:
+            NI = data['gamma(cs/a)']=data['gamma(kHz)']*data['kHz_to_cs_a']    
+            comm.bcast(NI, root=1)
+        else:
+            NI = None
         
-    if rank == 2:
-        SAN = data['omega_plasma(kHz)']=omega*data['omn(kHz)']    
-        comm.bcast(SAN, root=2)
-    else:
-        SAN = None    
+        if rank == 2:
+            SAN = data['omega_plasma(kHz)']=omega*data['omn(kHz)']    
+            comm.bcast(SAN, root=2)
+        else:
+            SAN = None    
     
-    if rank == 3:
-        YON = data['omega_lab(kHz)']=data['omega_plasma(kHz)']+data['omega_star_lab(kHz)']-data['omega_star_plasma(kHz)']  
-        comm.bcast(YON, root=3)
+        if rank == 3:
+            YON = data['omega_lab(kHz)']=data['omega_plasma(kHz)']+data['omega_star_lab(kHz)']-data['omega_star_plasma(kHz)']  
+            comm.bcast(YON, root=3)
+        else:
+            YON = None   
     else:
-        YON = None    
-    
+        data['gamma(kHz)']=gamma*data['omn(kHz)']
+        data['gamma(cs/a)']=data['gamma(kHz)']*data['kHz_to_cs_a']
+        data['omega_plasma(kHz)']=omega*data['omn(kHz)']
+        data['omega_lab(kHz)']=data['omega_plasma(kHz)']+data['omega_star_lab(kHz)']-data['omega_star_plasma(kHz)']
 
     data.to_csv(path+'/0_calc_'+filename,index=False)
 
     return gamma,omega
+   
 
 data=pd.read_csv(csvfile_name)      #data is a dataframe. 
 Path_list=data['Path']
