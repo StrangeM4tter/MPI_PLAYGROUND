@@ -32,8 +32,7 @@ from mpi4py import MPI
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 from DispersionRelationDeterminantFullConductivityZeff import Dispersion
-#VERSION 1 run the following: srun -N 1 -n 32 -t 01:00:00 -p development -J GKIMP ibrun netCDF4 python3 ./<file>.py
-# this code can most likely be optimized to run on all arrays universally
+#VERSION 1 run the following: srun -N 1 -n 10 -o 1 -t 02:00:00 -p development -J GKIMP time ibrun python3 ./<file>.py
 
 filename='MTM_dispersion_n_scanp169509.04218_465'
 
@@ -69,7 +68,7 @@ def Dispersion_calc(filename):
     if size >= nx:        
         for i in range(nx):
             if rank == i:     
-                gamma_complex_temp=Dispersion(nu[i], eta[i], shat[i], beta[i], ky[i], mu[i], zeff, ModIndex, xstar) 
+                gamma_complex_temp=Dispersion(nu[i], zeff, eta[i], beta[i], ky[i], ModIndex,  mu[i],  xstar, shat[i]) 
                 gamma_complex.append(gamma_complex_temp)
     else:
         for i in range(size):
@@ -78,13 +77,13 @@ def Dispersion_calc(filename):
                 n = nx//size            #number of times size can fit evenly into nx
                 for x in range(n):
                     if x == 0:
-                        gamma_complex_temp2=Dispersion(nu[(size*x)+i], eta[(size*x)+i], shat[(size*x)+i], beta[(size*x)+i], ky[(size*x)+i], mu[(size*x)+i], zeff, ModIndex, xstar)
+                        gamma_complex_temp2=Dispersion(nu[(size*x)+i], zeff, eta[(size*x)+i], beta[(size*x)+i], ky[(size*x)+i], ModIndex,  mu[(size*x)+i], xstar, shat[(size*x)+i])
                         gamma_complex.append(gamma_complex_temp2)
                     else:
-                        gamma_complex_temp=Dispersion(nu[(size*x)+i], eta[(size*x)+i], shat[(size*x)+i], beta[(size*x)+i], ky[(size*x)+i], mu[(size*x)+i], zeff, ModIndex, xstar)
+                        gamma_complex_temp=Dispersion(nu[(size*x)+i], zeff, eta[(size*x)+i], beta[(size*x)+i], ky[(size*x)+i], ModIndex, mu[(size*x)+i],  xstar, shat[(size*x)+i])
                         gamma_complex.append(gamma_complex_temp)
                 for i in range(m):
-                    gamma_complex_temp1=Dispersion(nu[(size*n)+i], eta[(size*n)+i], shat[(size*n)+i], beta[(size*n)+i], ky[(size*n)+i], mu[(size*n)+i], zeff, ModIndex, xstar)
+                    gamma_complex_temp1=Dispersion(nu[(size*n)+i], zeff, eta[(size*n)+i], beta[(size*n)+i], ky[(size*n)+i], ModIndex,  mu[(size*n)+i],  xstar, shat[(size*n)+i])
                     gamma_complex.append(gamma_complex_temp1)
                     
                     #above else block for a nontrivial case where # of rows > # of processors to keep some degree of efficiency. Not optimal unless m==0.
